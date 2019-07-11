@@ -65,7 +65,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Models\Movable.cs" />
-    <Compile Include="Models\Snake.cs" />
+    <Compile Include="Models\SnakeBody.cs" />
     <Compile Include="Utilities\GameUtils.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>

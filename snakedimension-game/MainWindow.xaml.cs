@@ -73,7 +73,8 @@ namespace snakedimension_game {
         //The common z coordinate for most meshes
         private static float commonZ = 50.0f;
 
-        private Mesh snakeHead = new Mesh() {
+        private List<SnakeBody> snakeBodies = new List<SnakeBody>();
+        private SnakeBody snakeHead = new SnakeBody() {
             Position = new Vector3(0, 0, commonZ),
             Scale = new Vector3(1.0f, 1.0f, 1),
             Mass = 1.0f,
@@ -91,10 +92,10 @@ namespace snakedimension_game {
         private int moveCounter = 5;
         private float speed = 2;
         private Vector3 direction = new Vector3(-2, 0, 0);
-        private List<Mesh> snakeBodies = new List<Mesh>();
+        private int[] snake = {0, 1, 2, 3};
         private bool initialized = false;
         private bool allowMove = false;
-
+      
         public void OpenGLControl_OpenGLDraw(object sender, SharpGL.SceneGraph.OpenGLEventArgs args) {
             Title = "snakedimension-game";
 
@@ -106,38 +107,31 @@ namespace snakedimension_game {
             gl.LoadIdentity();
             gl.Translate(0.0f, .0f, -150.0f);
 
+            //Draw Snakehead
             snakeHead.DrawSquare(gl);
-
+            
+            //Initialized all bodies
             if (!initialized) {
-                Mesh snakeBody = new Mesh() {
-                    //Position = snakeHead.Position - snakeHead.Velocity - new Vector3(0, 0, 0.5f),
+                SnakeBody snakeBody = new SnakeBody() {
                     Scale = new Vector3(1.0f, 1.0f, 0),
                     Color = new Vector4(0, 1, 0)
                 };
                 for (int i = 0; i < snakeLength; i++) {
                     snakeBodies.Add(snakeBody);
+
                 }
                 foreach (var body in snakeBodies) {
                     for (int i = 0; i < snakeBodies.Count; i++) {
-                        body.Position = new Vector3(2 * i, 0, commonZ);
-                    }
+                        //body.Position = new Vector3(snakeHead.Position.x - 2 + (2*i),0,commonZ);
+                        body.Color = new Vector4(0, 1, 0);
+                        body.BodyId = i;
+                        body.DrawSquare(gl);
+                   }
                 }
                 initialized = true;
             }
 
-            foreach (var body in snakeBodies) {
-                for (int i = 0; i < snakeBodies.Count; i++) {
-                    body.DrawSquare(gl);
-                }
-            }
-
-
-            foreach (var body in snakeBodies) {
-                for (int i = 0; i > snakeBodies.Count; i++) {
-                    body.Follow(snakeBodies[i]);
-                }
-            }
-
+            //Allow movement
             if (moveCounter > 0) {
                 moveCounter--;
                 snakeHead.Velocity *= 0;
@@ -146,13 +140,7 @@ namespace snakedimension_game {
                 moveCounter = 5;
             }
 
-            while (allowMove) { 
-                snakeHead.ApplyForce(direction);
-                allowMove = false;
-            }
-
-
-
+            //Controls
             if (Keyboard.IsKeyDown(moveUp)) {
                 direction = new Vector3(0, speed, 0);
             }
@@ -165,6 +153,24 @@ namespace snakedimension_game {
             if (Keyboard.IsKeyDown(moveRight)) {
                 direction = new Vector3(speed, 0, 0);
             }
+
+            while (allowMove) {
+                snakeHead.ApplyForce(direction);
+                allowMove = false;
+            }
+
+            //Draw Bodies
+            foreach (var body in snakeBodies) {
+                for (int i = 0; i < snakeBodies.Count; i++) {
+                    body.Position.x = snakeHead.Position.x + (body.Scale.x * 3) + ((body.Scale.x * 3) * i);
+                    body.Position.y = snakeHead.Position.y;
+                    body.Position.z = commonZ;
+                    //body.Position = new Vector3(snakeHead.Position.x + 2 + (2 * i), 0, commonZ);
+                    body.DrawSquare(gl);
+                }
+            }
+
+            //Text
             gl.DrawText(10, (int)Height - 90, 1.0f, 0.0f, 0, "Calibri", 10, "Counter: " + moveCounter);
             gl.DrawText(10, 50, 1.0f, 1.0f, 0, "Calibri", 10, "Snake Head Pos: " + snakeHead.Position.x + ", " + snakeHead.Position.y);
 
