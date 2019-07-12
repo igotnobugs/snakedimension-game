@@ -21,8 +21,7 @@ namespace snakedimension_game {
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window {
-        public MainWindow()
-        {
+        public MainWindow() {
             InitializeComponent();
             Loaded += new RoutedEventHandler(delegate (object sender, RoutedEventArgs args) {
                 //Load directly to the center
@@ -76,9 +75,45 @@ namespace snakedimension_game {
         private List<SnakeBody> snakeBodies = new List<SnakeBody>();
         private SnakeBody snakeHead = new SnakeBody() {
             Position = new Vector3(0, 0, commonZ),
-            Scale = new Vector3(1.0f, 1.0f, 1),
+            Scale = new Vector3(1.0f, 1.0f, 1.0f),
             Mass = 1.0f,
             Color = new Vector4(1.0f, 0.0f, 0.0f)
+        };
+        private SnakeBody snakeBody1 = new SnakeBody() {
+            Position = new Vector3(0, 0, commonZ),
+            Scale = new Vector3(1.0f, 1.0f, 1.0f),
+            Mass = 1.0f,
+            Color = new Vector4(0.0f, 1.0f, 0.0f)
+        };
+        private SnakeBody snakeBody2 = new SnakeBody() {
+            Position = new Vector3(0, 0, commonZ),
+            Scale = new Vector3(1.0f, 1.0f, 1.0f),
+            Mass = 1.0f,
+            Color = new Vector4(0.0f, 1.0f, 0.0f)
+        };
+        private SnakeBody snakeBody3 = new SnakeBody() {
+            Position = new Vector3(0, 0, commonZ),
+            Scale = new Vector3(1.0f, 1.0f, 1.0f),
+            Mass = 1.0f,
+            Color = new Vector4(0.0f, 1.0f, 0.0f)
+        };
+        private SnakeBody snakeBody4 = new SnakeBody() {
+            Position = new Vector3(0, 0, commonZ),
+            Scale = new Vector3(1.0f, 1.0f, 1.0f),
+            Mass = 1.0f,
+            Color = new Vector4(0.0f, 1.0f, 0.0f)
+        };
+        private SnakeBody snakeBody5 = new SnakeBody() {
+            Position = new Vector3(0, 0, commonZ),
+            Scale = new Vector3(1.0f, 1.0f, 1.0f),
+            Mass = 1.0f,
+            Color = new Vector4(0.0f, 1.0f, 0.0f)
+        };
+        private Mesh verticalLine = new Mesh() {
+            Color = new Vector4(1.0f, 1.0f, 1.0f)
+        };
+        private Mesh horizontalLine = new Mesh() {
+            Color = new Vector4(1.0f, 1.0f, 1.0f)
         };
 
         private Vector3 mousePos = new Vector3();
@@ -87,14 +122,18 @@ namespace snakedimension_game {
         private Key moveDown = Key.S;
         private Key moveLeft = Key.A;
         private Key moveRight = Key.D;
+        private Key quitKey = Key.Escape;
 
-        private int snakeLength = 3;
+        //private int snakeLength = 3;
         private int moveCounter = 5;
-        private float speed = 2;
-        private Vector3 direction = new Vector3(-2, 0, 0);
+        private float speed = 3;
+        private Vector3 direction = new Vector3(-3, 0, 0);
         private int[] snake = {0, 1, 2, 3};
         private bool initialized = false;
         private bool allowMove = false;
+
+        private float verticalBorder = 50.0f;
+        private float horizontalBorder = 30.0f;
       
         public void OpenGLControl_OpenGLDraw(object sender, SharpGL.SceneGraph.OpenGLEventArgs args) {
             Title = "snakedimension-game";
@@ -106,35 +145,54 @@ namespace snakedimension_game {
 
             gl.LoadIdentity();
             gl.Translate(0.0f, .0f, -150.0f);
+            gl.LookAt(0, 4.0f, -1.0f, 0, 4.0f, -150.0f, 0, 1, 0);
 
-            //Draw Snakehead
-            snakeHead.DrawSquare(gl);
-            
+            verticalLine.DrawDottedLine(gl, new Vector3(verticalBorder, -horizontalBorder, commonZ), new Vector3(verticalBorder, horizontalBorder, commonZ));
+            verticalLine.DrawDottedLine(gl, new Vector3(-verticalBorder, -horizontalBorder, commonZ), new Vector3(-verticalBorder, horizontalBorder, commonZ));
+            horizontalLine.DrawDottedLine(gl, new Vector3(-verticalBorder, horizontalBorder, commonZ), new Vector3(verticalBorder, horizontalBorder, commonZ));
+            horizontalLine.DrawDottedLine(gl, new Vector3(-verticalBorder, -horizontalBorder, commonZ), new Vector3(verticalBorder, -horizontalBorder, commonZ));
+
+
+
             //Initialized all bodies
             if (!initialized) {
-                SnakeBody snakeBody = new SnakeBody() {
-                    Scale = new Vector3(1.0f, 1.0f, 0),
-                    Color = new Vector4(0, 1, 0)
-                };
-                for (int i = 0; i < snakeLength; i++) {
-                    snakeBodies.Add(snakeBody);
-
-                }
-                foreach (var body in snakeBodies) {
-                    for (int i = 0; i < snakeBodies.Count; i++) {
-                        //body.Position = new Vector3(snakeHead.Position.x - 2 + (2*i),0,commonZ);
-                        body.Color = new Vector4(0, 1, 0);
-                        body.BodyId = i;
-                        body.DrawSquare(gl);
-                   }
-                }
+                //SnakeBody snakeBody = new SnakeBody() {
+                //    Scale = new Vector3(1.0f, 1.0f, 0),
+                //    Color = new Vector4(0, 1, 0)
+                //};
+                //for (int i = 0; i < snakeLength; i++) {
+                //    snakeBodies.Add(snakeBody);
+                //
+                //}
+                //foreach (var body in snakeBodies) {
+                //for (int i = 0; i < snakeBodies.Count; i++) {
+                //        //body.Position = new Vector3(snakeHead.Position.x - 2 + (2*i),0,commonZ);
+                //        body.Color = new Vector4(0, 1, 0);
+                //        body.BodyId = i;
+                //        body.DrawSquare(gl);
+                //}
+                snakeBody1.Position = new Vector3(snakeHead.Position.x + (snakeBody1.Scale.x * 3) + ((snakeBody1.Scale.x * 3) * 0), 0, commonZ);
+                snakeBody2.Position = new Vector3(snakeHead.Position.x + (snakeBody1.Scale.x * 3) + ((snakeBody1.Scale.x * 3) * 1), 0, commonZ);
+                snakeBody3.Position = new Vector3(snakeHead.Position.x + (snakeBody1.Scale.x * 3) + ((snakeBody1.Scale.x * 3) * 2), 0, commonZ);
+                snakeBody4.Position = new Vector3(snakeHead.Position.x + (snakeBody1.Scale.x * 3) + ((snakeBody1.Scale.x * 3) * 3), 0, commonZ);
+                snakeBody5.Position = new Vector3(snakeHead.Position.x + (snakeBody1.Scale.x * 3) + ((snakeBody1.Scale.x * 3) * 4), 0, commonZ);
                 initialized = true;
             }
+
+            //Draw Snake
+            snakeBody5.DrawSquare(gl);
+            snakeBody4.DrawSquare(gl);
+            snakeBody3.DrawSquare(gl);
+            snakeBody2.DrawSquare(gl);
+            snakeBody1.DrawSquare(gl);
+            snakeHead.DrawSquare(gl);
+
 
             //Allow movement
             if (moveCounter > 0) {
                 moveCounter--;
                 snakeHead.Velocity *= 0;
+
             } else {
                 allowMove = true;
                 moveCounter = 5;
@@ -154,21 +212,31 @@ namespace snakedimension_game {
                 direction = new Vector3(speed, 0, 0);
             }
 
+            //Quit Game
+            if (Keyboard.IsKeyDown(quitKey)) {
+                Environment.Exit(0);
+            }
+
             while (allowMove) {
+                snakeBody5.Position = snakeBody4.Position;
+                snakeBody4.Position = snakeBody3.Position;
+                snakeBody3.Position = snakeBody2.Position;
+                snakeBody2.Position = snakeBody1.Position;
+                snakeBody1.Position = snakeHead.Position;
                 snakeHead.ApplyForce(direction);
                 allowMove = false;
             }
 
             //Draw Bodies
-            foreach (var body in snakeBodies) {
-                for (int i = 0; i < snakeBodies.Count; i++) {
-                    body.Position.x = snakeHead.Position.x + (body.Scale.x * 3) + ((body.Scale.x * 3) * i);
-                    body.Position.y = snakeHead.Position.y;
-                    body.Position.z = commonZ;
-                    //body.Position = new Vector3(snakeHead.Position.x + 2 + (2 * i), 0, commonZ);
-                    body.DrawSquare(gl);
-                }
-            }
+            //foreach (var body in snakeBodies) {
+            //    for (int i = 0; i < snakeBodies.Count; i++) {
+            //        body.Position.x = snakeHead.Position.x + (body.Scale.x * 3) + ((body.Scale.x * 3) * i);
+            //        body.Position.y = snakeHead.Position.y;
+            //        body.Position.z = commonZ;
+            //        //body.Position = new Vector3(snakeHead.Position.x + 2 + (2 * i), 0, commonZ);
+            //        body.DrawSquare(gl);
+            //    }
+            //}
 
             //Text
             gl.DrawText(10, (int)Height - 90, 1.0f, 0.0f, 0, "Calibri", 10, "Counter: " + moveCounter);
