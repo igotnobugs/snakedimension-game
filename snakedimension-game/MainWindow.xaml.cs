@@ -73,41 +73,46 @@ namespace snakedimension_game {
         private static float commonZ = 50.0f;
 
         private List<SnakeBody> snakeBodies = new List<SnakeBody>();
-        private SnakeBody snakeHead = new SnakeBody() {
+        private Mesh snakeHead = new Mesh() {
             Position = new Vector3(0, 0, commonZ),
             Scale = new Vector3(1.0f, 1.0f, 1.0f),
             Mass = 1.0f,
             Color = new Vector4(1.0f, 0.0f, 0.0f)
         };
-        private SnakeBody snakeBody1 = new SnakeBody() {
+        private Mesh snakeBody1 = new Mesh() {
             Position = new Vector3(0, 0, commonZ),
             Scale = new Vector3(1.0f, 1.0f, 1.0f),
             Mass = 1.0f,
             Color = new Vector4(0.0f, 1.0f, 0.0f)
         };
-        private SnakeBody snakeBody2 = new SnakeBody() {
+        private Mesh snakeBody2 = new Mesh() {
             Position = new Vector3(0, 0, commonZ),
             Scale = new Vector3(1.0f, 1.0f, 1.0f),
             Mass = 1.0f,
             Color = new Vector4(0.0f, 1.0f, 0.0f)
         };
-        private SnakeBody snakeBody3 = new SnakeBody() {
+        private Mesh snakeBody3 = new Mesh() {
             Position = new Vector3(0, 0, commonZ),
             Scale = new Vector3(1.0f, 1.0f, 1.0f),
             Mass = 1.0f,
             Color = new Vector4(0.0f, 1.0f, 0.0f)
         };
-        private SnakeBody snakeBody4 = new SnakeBody() {
+        private Mesh snakeBody4 = new Mesh() {
             Position = new Vector3(0, 0, commonZ),
             Scale = new Vector3(1.0f, 1.0f, 1.0f),
             Mass = 1.0f,
             Color = new Vector4(0.0f, 1.0f, 0.0f)
         };
-        private SnakeBody snakeBody5 = new SnakeBody() {
+        private Mesh snakeBody5 = new Mesh() {
             Position = new Vector3(0, 0, commonZ),
             Scale = new Vector3(1.0f, 1.0f, 1.0f),
             Mass = 1.0f,
             Color = new Vector4(0.0f, 1.0f, 0.0f)
+        };
+        private Mesh food = new Mesh() {
+            Position = new Vector3(0, 0, commonZ),
+            Scale = new Vector3(0.9f, 0.9f, 1.0f),
+            Color = new Vector4(0.0f, 1.0f, 1.0f)
         };
         private Mesh verticalLine = new Mesh() {
             Color = new Vector4(1.0f, 1.0f, 1.0f)
@@ -117,7 +122,6 @@ namespace snakedimension_game {
         };
 
         private Vector3 mousePos = new Vector3();
-
         private Key moveUp = Key.W;
         private Key moveDown = Key.S;
         private Key moveLeft = Key.A;
@@ -125,16 +129,26 @@ namespace snakedimension_game {
         private Key quitKey = Key.Escape;
 
         //private int snakeLength = 3;
-        private int moveCounter = 5;
-        private float speed = 3;
-        private Vector3 direction = new Vector3(-3, 0, 0);
+        private int moveCounter = 3;
+        private float speed = 2;
+        private Vector3 direction = new Vector3(-2, 0, 0);
         private int[] snake = {0, 1, 2, 3};
         private bool initialized = false;
         private bool allowMove = false;
+        private bool foodSpawn = false;
+        private int score = 0;
 
         private float verticalBorder = 50.0f;
         private float horizontalBorder = 30.0f;
-      
+        private float space = 3.0f;
+
+        //48 28 / 2 === 24, 14
+        private int width = 24;
+        private int height = 14;
+        private int randomWidth;
+        private int randomHeight;
+
+
         public void OpenGLControl_OpenGLDraw(object sender, SharpGL.SceneGraph.OpenGLEventArgs args) {
             Title = "snakedimension-game";
 
@@ -171,11 +185,11 @@ namespace snakedimension_game {
                 //        body.BodyId = i;
                 //        body.DrawSquare(gl);
                 //}
-                snakeBody1.Position = new Vector3(snakeHead.Position.x + (snakeBody1.Scale.x * 3) + ((snakeBody1.Scale.x * 3) * 0), 0, commonZ);
-                snakeBody2.Position = new Vector3(snakeHead.Position.x + (snakeBody1.Scale.x * 3) + ((snakeBody1.Scale.x * 3) * 1), 0, commonZ);
-                snakeBody3.Position = new Vector3(snakeHead.Position.x + (snakeBody1.Scale.x * 3) + ((snakeBody1.Scale.x * 3) * 2), 0, commonZ);
-                snakeBody4.Position = new Vector3(snakeHead.Position.x + (snakeBody1.Scale.x * 3) + ((snakeBody1.Scale.x * 3) * 3), 0, commonZ);
-                snakeBody5.Position = new Vector3(snakeHead.Position.x + (snakeBody1.Scale.x * 3) + ((snakeBody1.Scale.x * 3) * 4), 0, commonZ);
+                snakeBody1.Position = new Vector3(snakeHead.Position.x + snakeBody1.Scale.x + (snakeBody1.Scale.x * 1), 0, commonZ);
+                snakeBody2.Position = new Vector3(snakeHead.Position.x + snakeBody1.Scale.x + (snakeBody1.Scale.x * 2), 0, commonZ);
+                snakeBody3.Position = new Vector3(snakeHead.Position.x + snakeBody1.Scale.x + (snakeBody1.Scale.x * 3), 0, commonZ);
+                snakeBody4.Position = new Vector3(snakeHead.Position.x + snakeBody1.Scale.x + (snakeBody1.Scale.x * 4), 0, commonZ);
+                snakeBody5.Position = new Vector3(snakeHead.Position.x + snakeBody1.Scale.x + (snakeBody1.Scale.x * 5), 0, commonZ);
                 initialized = true;
             }
 
@@ -187,6 +201,13 @@ namespace snakedimension_game {
             snakeBody1.DrawSquare(gl);
             snakeHead.DrawSquare(gl);
 
+            if (!foodSpawn) {
+                randomWidth = (int)Randomizer.Generate(-width, width);
+                randomHeight = (int)Randomizer.Generate(-height, height);
+                food.Position = new Vector3(randomWidth * 2, randomHeight * 2, commonZ);
+                foodSpawn = true;
+            }
+            food.DrawSquare(gl);
 
             //Allow movement
             if (moveCounter > 0) {
@@ -195,7 +216,12 @@ namespace snakedimension_game {
 
             } else {
                 allowMove = true;
-                moveCounter = 5;
+                moveCounter = 3;
+            }
+
+            if (food.HasCollidedWith(snakeHead)) {
+                foodSpawn = false;
+                score++;
             }
 
             //Controls
@@ -240,7 +266,10 @@ namespace snakedimension_game {
 
             //Text
             gl.DrawText(10, (int)Height - 90, 1.0f, 0.0f, 0, "Calibri", 10, "Counter: " + moveCounter);
+            gl.DrawText(10, 250, 1.0f, 1.0f, 0, "Calibri", 30, "Score: " + score);
+
             gl.DrawText(10, 50, 1.0f, 1.0f, 0, "Calibri", 10, "Snake Head Pos: " + snakeHead.Position.x + ", " + snakeHead.Position.y);
+            gl.DrawText(10, 60, 1.0f, 1.0f, 0, "Calibri", 10, "Food Pos: " + food.Position.x + ", " + food.Position.y);
 
         }
     }
