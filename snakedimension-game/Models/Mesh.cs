@@ -11,6 +11,7 @@ namespace snakedimension_game.Models {
         public Vector4 Color = new Vector4(0.5f, 0.5f, 0.5f, 0.5f);
         public float Radius = 0.5f;
         public bool enabledCollision = false;
+        public int bodyID;
 
         //public bool EnabledUpdate { get; set; }
 
