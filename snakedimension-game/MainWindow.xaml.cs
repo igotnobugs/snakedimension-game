@@ -1,20 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using SharpGL;
 using snakedimension_game.Models;
 using snakedimension_game.Utilities;
+using Newtonsoft.Json;
+using System.IO;
+using snakedimension_game.Data;
 
 namespace snakedimension_game {
     /// <summary>
@@ -24,7 +18,6 @@ namespace snakedimension_game {
         public MainWindow() {
             InitializeComponent();
             Loaded += new RoutedEventHandler(delegate (object sender, RoutedEventArgs args) {
-                //Load directly to the center
                 Top = (SystemParameters.VirtualScreenHeight / 2) - (Height / 2);
                 Left = (SystemParameters.VirtualScreenWidth / 2) - (Width / 2);
             });
@@ -39,9 +32,8 @@ namespace snakedimension_game {
 
         private void OpenGLControl_OpenGLInitialized(object sender, SharpGL.SceneGraph.OpenGLEventArgs args) {
             OpenGL gl = args.OpenGL;
-            //Set Background Color
-            //gl.ClearColor(0.7f, 0.7f, 0.9f, 0.0f);
 
+            //gl.ClearColor(0.7f, 0.7f, 0.9f, 0.0f); //Set Background Color
             gl.Enable(OpenGL.GL_DEPTH_TEST);
             float[] global_ambient = new float[] { 0.5f, 0.5f, 0.5f, 1.0f };
             float[] light0pos = new float[] { 1.0f, 1.0f, 1.0f, 0.0f };
@@ -69,48 +61,21 @@ namespace snakedimension_game {
             gl.BlendFunc(OpenGL.GL_SRC_ALPHA, OpenGL.GL_ONE_MINUS_SRC_ALPHA);
             gl.Enable(OpenGL.GL_BLEND);
         }
-        //The common z coordinate for most meshes
-        private static float commonZ = 50.0f;
+     
+        private static float COMMON_Z = 50.0f; //The common z coordinate for most meshes
 
         private List<SnakeBody> snakeBodies = new List<SnakeBody>();
-        private Mesh snakeHead = new Mesh() {
-            Position = new Vector3(0, 0, commonZ),
-            Scale = new Vector3(1.0f, 1.0f, 1.0f),
-            Mass = 1.0f,
-            Color = new Vector4(1.0f, 0.0f, 0.0f)
+        private SnakeBody snakeBody = new SnakeBody() {
+            Position = new Vector3(0, 0, COMMON_Z),
+            Color = new Vector4(0, 1, 0)
         };
-        private Mesh snakeBody1 = new Mesh() {
-            Position = new Vector3(0, 0, commonZ),
-            Scale = new Vector3(1.0f, 1.0f, 1.0f),
-            Mass = 1.0f,
-            Color = new Vector4(0.0f, 1.0f, 0.0f)
-        };
-        private Mesh snakeBody2 = new Mesh() {
-            Position = new Vector3(0, 0, commonZ),
-            Scale = new Vector3(1.0f, 1.0f, 1.0f),
-            Mass = 1.0f,
-            Color = new Vector4(0.0f, 1.0f, 0.0f)
-        };
-        private Mesh snakeBody3 = new Mesh() {
-            Position = new Vector3(0, 0, commonZ),
-            Scale = new Vector3(1.0f, 1.0f, 1.0f),
-            Mass = 1.0f,
-            Color = new Vector4(0.0f, 1.0f, 0.0f)
-        };
-        private Mesh snakeBody4 = new Mesh() {
-            Position = new Vector3(0, 0, commonZ),
-            Scale = new Vector3(1.0f, 1.0f, 1.0f),
-            Mass = 1.0f,
-            Color = new Vector4(0.0f, 1.0f, 0.0f)
-        };
-        private Mesh snakeBody5 = new Mesh() {
-            Position = new Vector3(0, 0, commonZ),
-            Scale = new Vector3(1.0f, 1.0f, 1.0f),
-            Mass = 1.0f,
-            Color = new Vector4(0.0f, 1.0f, 0.0f)
+        private SnakeHead snakeHead = new SnakeHead() {
+            Scale = new Vector3(0.9f, 0.9f, 0),
+            Position = new Vector3(0, 0, COMMON_Z),
+            Color = new Vector4(1, 0, 0)
         };
         private Mesh food = new Mesh() {
-            Position = new Vector3(0, 0, commonZ),
+            Position = new Vector3(0, 0, COMMON_Z),
             Scale = new Vector3(0.9f, 0.9f, 1.0f),
             Color = new Vector4(0.0f, 1.0f, 1.0f)
         };
@@ -120,39 +85,50 @@ namespace snakedimension_game {
         private Mesh horizontalLine = new Mesh() {
             Color = new Vector4(1.0f, 1.0f, 1.0f)
         };
+        private Mesh Menu = new Mesh() {
+            Position = new Vector3(0, 0, COMMON_Z),
+            Scale = new Vector3(30.0f, 20.0f, 0.0f),
+            Color = new Vector4(0.2f, 0.2f, 0.2f, 0.7f)
+        };
 
+        private Scores HighScore = new Scores() {
+            Name = "None",
+            Score = 0
+        };
+		
         private Vector3 mousePos = new Vector3();
         private Key moveUp = Key.W;
         private Key moveDown = Key.S;
         private Key moveLeft = Key.A;
         private Key moveRight = Key.D;
         private Key quitKey = Key.Escape;
+        private Key restartKey = Key.R;
 
-        //private int snakeLength = 3;
-        private int moveCounter = 3;
+        private Vector3 center = new Vector3(0, 0, COMMON_Z);
+        private int snakeInitialLength = 3;
+        private int moveCounter = 2;
         private float speed = 2;
         private Vector3 direction = new Vector3(-2, 0, 0);
-        private int[] snake = {0, 1, 2, 3};
         private bool initialized = false;
         private bool allowMove = false;
         private bool foodSpawn = false;
         private int score = 0;
+        private bool gameOver = false;
+        private string[] menuText = { "Game Over", "Press R to Retry" };
+        private int[] menuSize = { 30, 20 };
+        public float cons = 0.375f; //Monospace Constant to be able to get the length of string
+
 
         private float verticalBorder = 50.0f;
         private float horizontalBorder = 30.0f;
-        private float space = 3.0f;
 
         //48 28 / 2 === 24, 14
         private int width = 24;
         private int height = 14;
         private int randomWidth;
         private int randomHeight;
-
-        private Vector3 temp1;
-        private Vector3 temp2;
-        bool test = false;
-
-        //public List<Mesh> snakeBodies = new List<Mesh>();
+        private bool saving = false;
+        private bool loading = false;
 
         public void OpenGLControl_OpenGLDraw(object sender, SharpGL.SceneGraph.OpenGLEventArgs args) {
             Title = "snakedimension-game";
@@ -166,104 +142,173 @@ namespace snakedimension_game {
             gl.Translate(0.0f, .0f, -150.0f);
             gl.LookAt(0, 4.0f, -1.0f, 0, 4.0f, -150.0f, 0, 1, 0);
 
-            verticalLine.DrawDottedLine(gl, new Vector3(verticalBorder, -horizontalBorder, commonZ), new Vector3(verticalBorder, horizontalBorder, commonZ));
-            verticalLine.DrawDottedLine(gl, new Vector3(-verticalBorder, -horizontalBorder, commonZ), new Vector3(-verticalBorder, horizontalBorder, commonZ));
-            horizontalLine.DrawDottedLine(gl, new Vector3(-verticalBorder, horizontalBorder, commonZ), new Vector3(verticalBorder, horizontalBorder, commonZ));
-            horizontalLine.DrawDottedLine(gl, new Vector3(-verticalBorder, -horizontalBorder, commonZ), new Vector3(verticalBorder, -horizontalBorder, commonZ));
+            //Draw Border
+            verticalLine.DrawDottedLine(gl, new Vector3(verticalBorder, -horizontalBorder, COMMON_Z), new Vector3(verticalBorder, horizontalBorder, COMMON_Z));
+            verticalLine.DrawDottedLine(gl, new Vector3(-verticalBorder, -horizontalBorder, COMMON_Z), new Vector3(-verticalBorder, horizontalBorder, COMMON_Z));
+            horizontalLine.DrawDottedLine(gl, new Vector3(-verticalBorder, horizontalBorder, COMMON_Z), new Vector3(verticalBorder, horizontalBorder, COMMON_Z));
+            horizontalLine.DrawDottedLine(gl, new Vector3(-verticalBorder, -horizontalBorder, COMMON_Z), new Vector3(verticalBorder, -horizontalBorder, COMMON_Z));
 
-            SnakeBody snakeBody = new SnakeBody() {
-                Scale = new Vector3(1.0f, 1.0f, 0),
-                Color = new Vector4(0, 1, 0)
-            };
-            //Initialized all bodies
-            if (!initialized) {
-                for (int i = 0; i < 5; i++) {
+            //Initialized Bodies
+            while (!initialized) {
+
+                if (File.Exists(@"score.json")) {
+                    loading = true;
+                }
+                else {
+                    saving = true;
+                }
+
+                for (int i = 1; i <= snakeInitialLength; i++) {
                     snakeBodies.Add(new SnakeBody() {
-                        Scale = new Vector3(1.0f, 1.0f, 0),
-                        Color = new Vector4(0, 1, 0),
-                        Position = new Vector3(snakeHead.Position.x + snakeHead.Scale.x + (snakeHead.Scale.x * (1 + i)), 0, commonZ),
-                        BodyId = i,                   
+                        Scale = new Vector3(0.9f, 0.9f, 0),
+                        Color = new Vector4(0, 1, 0), //0 = red, the rest is green.
+                        BodyId = i,
+                        Position = new Vector3(snakeHead.Position.x + (speed * i), 0, COMMON_Z),
+                                        
                     });
                 }
                 initialized = true;
             }
-            //Sort List to ascending
-            snakeBodies = snakeBodies.OrderBy(x => x.BodyId).ToList();
-            foreach (var body in snakeBodies) {
-                Console.WriteLine(body.Position);
-                body.DrawSquare(gl);
+
+            while (loading) {
+                //If file exist
+                using (StreamReader file = File.OpenText(@"score.json")) {
+                    JsonSerializer serializer = new JsonSerializer();
+                    HighScore = (Scores)serializer.Deserialize(file, typeof(Scores));
+                }
+                loading = false;
             }
-            
-            //Draw Snake
+
+            while (saving) {
+                // serialize JSON directly to a file
+                using (StreamWriter file = File.CreateText(@"score.json")) {
+                    JsonSerializer serializer = new JsonSerializer();
+                    serializer.Serialize(file, HighScore);
+                }
+                saving = false;
+            }
+
+            //Allow movement
+            while (allowMove) {
+                Vector3 temp1 = new Vector3(0, 0, 0);
+                Vector3 temp2 = new Vector3(0, 0, 0);
+                bool doFirst = true;
+                temp1 = snakeHead.Position;
+                snakeHead.ApplyForce(direction);
+                foreach (var body in snakeBodies) {
+                    if (doFirst) {
+                        temp2 = body.Position;
+                        body.Position = temp1;
+                    }
+                    else {
+                        temp1 = body.Position;
+                        body.Position = temp2;
+                    }
+                    doFirst = doFirst ? false : true; //Switch back and forth
+                }
+                allowMove = false;
+            }
+
+            //snakeBodies = snakeBodies.OrderBy(x => x.BodyId).ToList(); 
+            foreach (var body in snakeBodies) {
+                if (body.HasCollidedWith(snakeHead) && body.BodyId > 3) {
+                    gameOver = true;
+                }
+                body.DrawSquare(gl);
+            }          
             snakeHead.DrawSquare(gl);
+
+            if (gameOver) {
+                snakeHead.Velocity *= 0;
+                if (score > HighScore.Score) {
+                    HighScore.Score = score;
+                    saving = true;
+                }
+            } else {
+                if (moveCounter > 0) {
+                    moveCounter--;
+                    snakeHead.Velocity *= 0;
+                }
+                else {
+                    allowMove = true;
+                    moveCounter = 2;
+                }
+            }
+
+            if ((snakeHead.Position.x > 48) || (snakeHead.Position.x < -48) ||
+                (snakeHead.Position.y > 28) || (snakeHead.Position.y < -28)) {
+                gameOver = true;
+            }
 
             if (!foodSpawn) {
                 randomWidth = (int)Randomizer.Generate(-width, width);
                 randomHeight = (int)Randomizer.Generate(-height, height);
-                food.Position = new Vector3(randomWidth * 2, randomHeight * 2, commonZ);
+                food.Position = new Vector3(randomWidth * 2, randomHeight * 2, COMMON_Z);
                 foodSpawn = true;
             }
             food.DrawSquare(gl);
 
-            //Allow movement
-            if (moveCounter > 0) {
-                moveCounter--;
-                snakeHead.Velocity *= 0;
-
-            } else {
-                allowMove = true;
-                moveCounter = 3;
-            }
-            while (allowMove) {
-                temp1 = snakeHead.Position;
-                snakeHead.ApplyForce(direction);
-                //Order Snake by descending
-                //snakeBodies = snakeBodies.OrderByDescending(x => x.BodyId).ToList();
-                foreach (var body in snakeBodies) {
-                    if (!test) {
-                        temp2 = body.Position; //Store body position in temp2
-                        body.Position = temp1; 
-                    } else {
-                        temp1 = body.Position;
-                        body.Position = temp2;
-                    }
-                    test = (test) ? false : true; //Switch back and forth5
-                    Console.WriteLine(body.BodyId);
-                    //body.DrawSquare(gl);
-                }
-                
-                allowMove = false;
-            }
             //Food eating
-            if (food.HasCollidedWith(snakeHead)) {
+            if (snakeHead.HasCollidedWith(food)) {
                 foodSpawn = false;
+                //Add new Body
+                int lastBodyId = snakeBodies.Last().BodyId;
+                snakeBodies.Add(new SnakeBody() {
+                    Scale = new Vector3(0.9f, 0.9f, 0),
+                    Color = new Vector4(0, 1, 0),
+                    BodyId = lastBodyId + 1
+                });
                 score++;
             }
-            //Controls
-            if (Keyboard.IsKeyDown(moveUp)) {
-                direction = new Vector3(0, speed, 0);
+
+            if (allowMove) {
+                //Controls
+                if (Keyboard.IsKeyDown(moveUp) && (direction.y != -speed)) {
+                    direction = new Vector3(0, speed, 0);
+                }
+                if (Keyboard.IsKeyDown(moveDown) && (direction.y != speed)) {
+                    direction = new Vector3(0, -speed, 0);
+                }
+                if (Keyboard.IsKeyDown(moveLeft) && (direction.x != speed)) {
+                    direction = new Vector3(-speed, 0, 0);
+                }
+                if (Keyboard.IsKeyDown(moveRight) && (direction.x != -speed)) {
+                    direction = new Vector3(speed, 0, 0);
+                }
             }
-            if (Keyboard.IsKeyDown(moveDown)) {
-                direction = new Vector3(0, -speed, 0);
-            }
-            if (Keyboard.IsKeyDown(moveLeft)) {
+
+            if (Keyboard.IsKeyDown(restartKey)) {
+                initialized = false;
+                score = 0;
+                snakeHead.Position = center;
                 direction = new Vector3(-speed, 0, 0);
+                snakeBodies.Clear();
+                gameOver = false;
             }
-            if (Keyboard.IsKeyDown(moveRight)) {
-                direction = new Vector3(speed, 0, 0);
-            }
+
             //Quit Game
             if (Keyboard.IsKeyDown(quitKey)) {
                 Environment.Exit(0);
             }
 
-
             //Text
             gl.DrawText(10, (int)Height - 90, 1.0f, 0.0f, 0, "Calibri", 10, "Counter: " + moveCounter);
             gl.DrawText(10, 250, 1.0f, 1.0f, 0, "Calibri", 30, "Score: " + score);
+            gl.DrawText(10, 280, 1.0f, 1.0f, 0, "Calibri", 15, "High Score: " + HighScore.Score);
 
             gl.DrawText(10, 50, 1.0f, 1.0f, 0, "Calibri", 10, "Snake Head Pos: " + snakeHead.Position.x + ", " + snakeHead.Position.y);
             gl.DrawText(10, 60, 1.0f, 1.0f, 0, "Calibri", 10, "Food Pos: " + food.Position.x + ", " + food.Position.y);
+            gl.DrawText(10, 70, 1.0f, 1.0f, 0, "Calibri", 10, "Snake Head Direction: " + direction.x + ", " + direction.y);
+            gl.DrawText(10, 80, 1.0f, 1.0f, 0, "Calibri", 10, "Game Over: " + gameOver);
+
+
+            //Menu Overlays
+            if (gameOver) {
+                Menu.DrawSquare(gl);
+                gl.DrawText((int)Width / 2 - ((int)(menuSize[0] * cons) * menuText[0].Length), (int)Height / 2 + 30, 1.0f, 0.0f, 0.0f, "Courier New", menuSize[0], menuText[0]);
+                gl.DrawText((int)Width / 2 - ((int)(menuSize[1] * cons) * menuText[1].Length), (int)Height / 2 - 50, 1.0f, 0.0f, 0.0f, "Courier New", menuSize[1], menuText[1]);
+            }
+            //End
         }
     }
 }

@@ -11,9 +11,6 @@ namespace snakedimension_game.Models {
         public Vector4 Color = new Vector4(0.5f, 0.5f, 0.5f, 0.5f);
         public float Radius = 0.5f;
         public bool enabledCollision = false;
-        public int bodyID;
-
-        //public bool EnabledUpdate { get; set; }
 
         public Mesh() {
             this.Position = new Vector3();
@@ -206,7 +203,7 @@ namespace snakedimension_game.Models {
             UpdateMotion();
         }
 
-        private void UpdateMotion() {
+        public void UpdateMotion() {
             Velocity += Acceleration;
             Position += Velocity;
             Acceleration *= 0;
