@@ -109,11 +109,12 @@ namespace snakedimension_game {
         private int moveCounter = 2;
         private float speed = 2;
         private Vector3 direction = new Vector3(-2, 0, 0);
-        private bool initialized = false;
+        private bool isInitialized = false;
         private bool allowMove = false;
-        private bool foodSpawn = false;
+        private bool allowFoodSpawn = false;
         private int score = 0;
-        private bool gameOver = false;
+        private bool isGameOver = false;
+        private bool allowCollisionWall = false;
         private string[] menuText = { "Game Over", "Press R to Retry" };
         private int[] menuSize = { 30, 20 };
         public float cons = 0.375f; //Monospace Constant to be able to get the length of string
@@ -149,7 +150,7 @@ namespace snakedimension_game {
             horizontalLine.DrawDottedLine(gl, new Vector3(-verticalBorder, -horizontalBorder, COMMON_Z), new Vector3(verticalBorder, -horizontalBorder, COMMON_Z));
 
             //Initialized Bodies
-            while (!initialized) {
+            while (!isInitialized) {
 
                 if (File.Exists(@"score.json")) {
                     loading = true;
@@ -167,7 +168,7 @@ namespace snakedimension_game {
                                         
                     });
                 }
-                initialized = true;
+                isInitialized = true;
             }
 
             while (loading) {
@@ -195,6 +196,12 @@ namespace snakedimension_game {
                 bool doFirst = true;
                 temp1 = snakeHead.Position;
                 snakeHead.ApplyForce(direction);
+                if ((snakeHead.Position.x < -verticalBorder + snakeHead.Scale.x) || (snakeHead.Position.x > verticalBorder - snakeHead.Scale.x)) {
+                    snakeHead.Position.x *= -1;
+                }
+                if ((snakeHead.Position.y < -horizontalBorder + snakeHead.Scale.y) || (snakeHead.Position.y > horizontalBorder - snakeHead.Scale.y)) {
+                    snakeHead.Position.y *= -1;
+                }
                 foreach (var body in snakeBodies) {
                     if (doFirst) {
                         temp2 = body.Position;
@@ -209,16 +216,15 @@ namespace snakedimension_game {
                 allowMove = false;
             }
 
-            //snakeBodies = snakeBodies.OrderBy(x => x.BodyId).ToList(); 
             foreach (var body in snakeBodies) {
                 if (body.HasCollidedWith(snakeHead) && body.BodyId > 3) {
-                    gameOver = true;
+                    isGameOver = true;
                 }
                 body.DrawSquare(gl);
             }          
             snakeHead.DrawSquare(gl);
 
-            if (gameOver) {
+            if (isGameOver) {
                 snakeHead.Velocity *= 0;
                 if (score > HighScore.Score) {
                     HighScore.Score = score;
@@ -231,26 +237,27 @@ namespace snakedimension_game {
                 }
                 else {
                     allowMove = true;
-                    moveCounter = 2;
+                    moveCounter = 1;
                 }
             }
-
-            if ((snakeHead.Position.x > 48) || (snakeHead.Position.x < -48) ||
-                (snakeHead.Position.y > 28) || (snakeHead.Position.y < -28)) {
-                gameOver = true;
+            
+            if (((snakeHead.Position.x > 48) || (snakeHead.Position.x < -48) ||
+                (snakeHead.Position.y > 28) || (snakeHead.Position.y < -28)) &&
+                allowCollisionWall) {
+                isGameOver = true;
             }
-
-            if (!foodSpawn) {
+            
+            if (!allowFoodSpawn) {
                 randomWidth = (int)Randomizer.Generate(-width, width);
                 randomHeight = (int)Randomizer.Generate(-height, height);
                 food.Position = new Vector3(randomWidth * 2, randomHeight * 2, COMMON_Z);
-                foodSpawn = true;
+                allowFoodSpawn = true;
             }
             food.DrawSquare(gl);
 
             //Food eating
             if (snakeHead.HasCollidedWith(food)) {
-                foodSpawn = false;
+                allowFoodSpawn = false;
                 //Add new Body
                 int lastBodyId = snakeBodies.Last().BodyId;
                 snakeBodies.Add(new SnakeBody() {
@@ -278,12 +285,12 @@ namespace snakedimension_game {
             }
 
             if (Keyboard.IsKeyDown(restartKey)) {
-                initialized = false;
+                isInitialized = false;
                 score = 0;
                 snakeHead.Position = center;
                 direction = new Vector3(-speed, 0, 0);
                 snakeBodies.Clear();
-                gameOver = false;
+                isGameOver = false;
             }
 
             //Quit Game
@@ -299,11 +306,11 @@ namespace snakedimension_game {
             gl.DrawText(10, 50, 1.0f, 1.0f, 0, "Calibri", 10, "Snake Head Pos: " + snakeHead.Position.x + ", " + snakeHead.Position.y);
             gl.DrawText(10, 60, 1.0f, 1.0f, 0, "Calibri", 10, "Food Pos: " + food.Position.x + ", " + food.Position.y);
             gl.DrawText(10, 70, 1.0f, 1.0f, 0, "Calibri", 10, "Snake Head Direction: " + direction.x + ", " + direction.y);
-            gl.DrawText(10, 80, 1.0f, 1.0f, 0, "Calibri", 10, "Game Over: " + gameOver);
+            gl.DrawText(10, 80, 1.0f, 1.0f, 0, "Calibri", 10, "Game Over: " + isGameOver);
 
 
             //Menu Overlays
-            if (gameOver) {
+            if (isGameOver) {
                 Menu.DrawSquare(gl);
                 gl.DrawText((int)Width / 2 - ((int)(menuSize[0] * cons) * menuText[0].Length), (int)Height / 2 + 30, 1.0f, 0.0f, 0.0f, "Courier New", menuSize[0], menuText[0]);
                 gl.DrawText((int)Width / 2 - ((int)(menuSize[1] * cons) * menuText[1].Length), (int)Height / 2 - 50, 1.0f, 0.0f, 0.0f, "Courier New", menuSize[1], menuText[1]);
