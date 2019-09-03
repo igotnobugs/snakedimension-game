@@ -96,22 +96,28 @@ namespace snakedimension_game {
             Score = 0
         };
 		
+        public class Game {
+            public static Key moveUp = Key.W;
+            public static Key moveDown = Key.S;
+            public static Key moveLeft = Key.A;
+            public static Key moveRight = Key.D;
+            public static Key quitKey = Key.Escape;
+            public static Key restartKey = Key.R;
+
+            public static bool isInitialized = false;
+            public static bool allowMove = false;
+            public static bool isFoodEaten = true;
+        }
+
         private Vector3 mousePos = new Vector3();
-        private Key moveUp = Key.W;
-        private Key moveDown = Key.S;
-        private Key moveLeft = Key.A;
-        private Key moveRight = Key.D;
-        private Key quitKey = Key.Escape;
-        private Key restartKey = Key.R;
+
 
         private Vector3 center = new Vector3(0, 0, COMMON_Z);
         private int snakeInitialLength = 3;
         private int moveCounter = 2;
         private float speed = 2;
         private Vector3 direction = new Vector3(-2, 0, 0);
-        private bool isInitialized = false;
-        private bool allowMove = false;
-        private bool allowFoodSpawn = false;
+
         private int score = 0;
         private bool isGameOver = false;
         private bool allowCollisionWall = false;
@@ -130,6 +136,13 @@ namespace snakedimension_game {
         private int randomHeight;
         private bool saving = false;
         private bool loading = false;
+
+        public Vector3 GenerateRandomPosition2(float width, float height, int gridSize, float depth) {
+            int randomX = (int)Randomizer.Generate(-width, width);
+            int randomY = (int)Randomizer.Generate(-height, height);
+            Vector3 Position = new Vector3(randomX * gridSize, randomY * gridSize, depth);
+            return Position;
+        }
 
         public void OpenGLControl_OpenGLDraw(object sender, SharpGL.SceneGraph.OpenGLEventArgs args) {
             Title = "snakedimension-game";
@@ -150,7 +163,7 @@ namespace snakedimension_game {
             horizontalLine.DrawDottedLine(gl, new Vector3(-verticalBorder, -horizontalBorder, COMMON_Z), new Vector3(verticalBorder, -horizontalBorder, COMMON_Z));
 
             //Initialized Bodies
-            while (!isInitialized) {
+            while (!Game.isInitialized) {
 
                 if (File.Exists(@"score.json")) {
                     loading = true;
@@ -168,7 +181,7 @@ namespace snakedimension_game {
                                         
                     });
                 }
-                isInitialized = true;
+                Game.isInitialized = true;
             }
 
             while (loading) {
@@ -190,7 +203,7 @@ namespace snakedimension_game {
             }
 
             //Allow movement
-            while (allowMove) {
+            while (Game.allowMove) {
                 Vector3 temp1 = new Vector3(0, 0, 0);
                 Vector3 temp2 = new Vector3(0, 0, 0);
                 bool doFirst = true;
@@ -213,7 +226,7 @@ namespace snakedimension_game {
                     }
                     doFirst = doFirst ? false : true; //Switch back and forth
                 }
-                allowMove = false;
+                Game.allowMove = false;
             }
 
             foreach (var body in snakeBodies) {
@@ -236,7 +249,7 @@ namespace snakedimension_game {
                     snakeHead.Velocity *= 0;
                 }
                 else {
-                    allowMove = true;
+                    Game.allowMove = true;
                     moveCounter = 1;
                 }
             }
@@ -247,17 +260,15 @@ namespace snakedimension_game {
                 isGameOver = true;
             }
             
-            if (!allowFoodSpawn) {
-                randomWidth = (int)Randomizer.Generate(-width, width);
-                randomHeight = (int)Randomizer.Generate(-height, height);
-                food.Position = new Vector3(randomWidth * 2, randomHeight * 2, COMMON_Z);
-                allowFoodSpawn = true;
+            if (Game.isFoodEaten) {
+                food.Position = GenerateRandomPosition2(width, height, 2, COMMON_Z);
+                Game.isFoodEaten = false;
             }
             food.DrawSquare(gl);
 
             //Food eating
             if (snakeHead.HasCollidedWith(food)) {
-                allowFoodSpawn = false;
+                Game.isFoodEaten = true;
                 //Add new Body
                 int lastBodyId = snakeBodies.Last().BodyId;
                 snakeBodies.Add(new SnakeBody() {
@@ -268,24 +279,24 @@ namespace snakedimension_game {
                 score++;
             }
 
-            if (allowMove) {
+            if (Game.allowMove) {
                 //Controls
-                if (Keyboard.IsKeyDown(moveUp) && (direction.y != -speed)) {
+                if (Keyboard.IsKeyDown(Game.moveUp) && (direction.y != -speed)) {
                     direction = new Vector3(0, speed, 0);
                 }
-                if (Keyboard.IsKeyDown(moveDown) && (direction.y != speed)) {
+                if (Keyboard.IsKeyDown(Game.moveDown) && (direction.y != speed)) {
                     direction = new Vector3(0, -speed, 0);
                 }
-                if (Keyboard.IsKeyDown(moveLeft) && (direction.x != speed)) {
+                if (Keyboard.IsKeyDown(Game.moveLeft) && (direction.x != speed)) {
                     direction = new Vector3(-speed, 0, 0);
                 }
-                if (Keyboard.IsKeyDown(moveRight) && (direction.x != -speed)) {
+                if (Keyboard.IsKeyDown(Game.moveRight) && (direction.x != -speed)) {
                     direction = new Vector3(speed, 0, 0);
                 }
             }
 
-            if (Keyboard.IsKeyDown(restartKey)) {
-                isInitialized = false;
+            if (Keyboard.IsKeyDown(Game.restartKey)) {
+                Game.isInitialized = false;
                 score = 0;
                 snakeHead.Position = center;
                 direction = new Vector3(-speed, 0, 0);
@@ -294,7 +305,7 @@ namespace snakedimension_game {
             }
 
             //Quit Game
-            if (Keyboard.IsKeyDown(quitKey)) {
+            if (Keyboard.IsKeyDown(Game.quitKey)) {
                 Environment.Exit(0);
             }
 
